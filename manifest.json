@@ -1,0 +1,12 @@
+{
+  "domain": "football_data",
+  "name": "Football Data",
+  "codeowners": ["@lonebaggie"],
+  "config_flow": true,
+  "documentation": "https://github.com/lone-baggie/football_data",
+  "icon": "mdi:soccer",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/lone-baggie/football_data/issues",
+  "requirements": ["aiohttp"],
+  "version": "1.0.0"
+}

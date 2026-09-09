@@ -1,0 +1,229 @@
+match_team_from_sentence:
+  name: Match Team from Sentence
+  description: Performs a prefix match against a full spoken sentence to extract a team ID or returns the default favorite club ID.
+  fields:
+    sentence:
+      name: Spoken Sentence
+      description: The raw text command spoken by the user.
+      required: true
+      example: "When are Arsenal playing next?"
+      selector:
+        text:
+    favorite_club_id:
+      name: Favorite Club ID Fallback
+      description: Default team ID to return if no specific team prefix matches in the sentence.
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+get_scores_and_fixtures:
+  name: Get Scores and Fixtures
+  description: Search across locally cached match data.
+  fields:
+    league:
+      name: League Code
+      description: Optional league code (e.g., PL, ELC). If omitted, searches across all loaded leagues.
+      example: "PL"
+      selector:
+        text:
+    team_id:
+      name: Team ID
+      description: Optional integer ID for a specific team.
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    matchday:
+      name: Matchday Number
+      description: Restrict search strictly to games on this matchday number.
+      example: 1
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+    limit_last:
+      name: Last X Results
+      description: Limit output to the last X finished matches.
+      example: 5
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+    limit_next:
+      name: Next X Fixtures
+      description: Limit output to the next X scheduled fixtures.
+      example: 3
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
+
+get_league_position:
+  name: Get League Position / Team Info
+  description: Retrieve detailed team standing directly from cached standings table.
+  fields:
+    team_id:
+      name: Team ID
+      description: The integer ID for the target club.
+      required: true
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+get_team_id:
+  name: Get Team ID by Name
+  description: Look up a team's official ID using its name from the local cached team lookup sensor.
+  fields:
+    team_name:
+      name: Team Name
+      description: Exact or partial name of the team (e.g., "Arsenal" or "West Bromwich Albion FC").
+      required: true
+      example: "Arsenal"
+      selector:
+        text:
+
+refresh_data:
+  name: Refresh Data
+  description: Force an immediate update of cached standings, teams, and match data from Football-Data.org.
+  fields:
+    league:
+      name: League Code
+      description: Optional league code (e.g., PL). Leave blank to refresh all configured leagues.
+      example: "PL"
+      selector:
+        text:
+
+get_squad_by_team_id:
+  name: Get Squad by Team ID
+  description: Live fetch squad members (ID, full name, position) for a team using its Team ID.
+  fields:
+    team_id:
+      name: Team ID
+      description: The integer team ID (e.g., 57 for Arsenal).
+      required: true
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+get_player_by_id:
+  name: Get Player by Person ID
+  description: Live fetch individual player details (ID, name, position) by Person ID.
+  fields:
+    person_id:
+      name: Person ID
+      description: The unique integer ID for the player.
+      required: true
+      example: 3254
+      selector:
+        number:
+          min: 1
+          max: 1000000
+          mode: box
+    team_id:
+      name: Team ID (Optional)
+      description: Optional team ID to accelerate search if known.
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+get_match_details:
+  name: Get Match Details by Match ID
+  description: Live fetch detailed match information (venue, officials, lineups, score) using a Match ID.
+  fields:
+    match_id:
+      name: Match ID
+      description: The unique integer match ID (e.g., 436677).
+      required: true
+      example: 436677
+      selector:
+        number:
+          min: 1
+          max: 10000000
+          mode: box
+
+get_team_details:
+  name: Get Team Details
+  description: Live fetch full team details (stadium venue, coach, colors, running competitions, and squad) using a Team ID.
+  fields:
+    team_id:
+      name: Team ID
+      description: The unique integer ID for the target club (e.g., 57 for Arsenal, 61 for Chelsea).
+      required: true
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+update_next_games:
+  name: Update Next Games
+  description: Sets target team ID for sensor.next_five_games and refreshes fixture data.
+  fields:
+    team_id:
+      name: Team ID
+      description: The team ID to track upcoming fixtures for.
+      required: true
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+update_last_match:
+  name: Update Last Match
+  description: Sets team ID for sensor.football_data_last_match and automatically retrieves their most recent finished match.
+  fields:
+    team_id:
+      name: Team ID
+      description: The team ID to fetch the last finished match for.
+      required: true
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+
+get_match:
+  name: Get Match
+  description: Returns match ID for specified matchday or last played match of the current season.
+  fields:
+    team_id:
+      name: Team ID
+      description: The integer team ID.
+      required: true
+      example: 57
+      selector:
+        number:
+          min: 1
+          max: 100000
+          mode: box
+    matchday:
+      name: Matchday
+      description: Optional matchday number.
+      required: false
+      example: 12
+      selector:
+        number:
+          min: 1
+          max: 50
+          mode: box
