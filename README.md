@@ -17,7 +17,7 @@ A custom Home Assistant integration powered by the [Football-Data.org API](https
 ## 📁 Repository Structure
 
 ```text
-your-github-repo-name/
+football_data/
 ├── hacs.json                          # HACS configuration file
 ├── README.md                          # Documentation
 ├── LICENSE                            # License file
