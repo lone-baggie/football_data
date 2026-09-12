@@ -1,4 +1,4 @@
-# ⚽ Football Data Integration for Home Assistant
+﻿# ⚽ Football Data Integration for Home Assistant
 
 A custom Home Assistant integration powered by the [Football-Data.org API](https://www.football-data.org/). Effortlessly track live scores, league standings, squad info, and upcoming fixtures. Designed with native support for **Voice Assistants**, **Jinja2 templating**, and **dynamic entity state restoration**.
 
@@ -7,10 +7,10 @@ A custom Home Assistant integration powered by the [Football-Data.org API](https
 ## 🌟 Key Features
 
 * 📊 **Live League Tables & Standings:** Dynamic sensors caching entire league tables directly inside state attributes.
-* 🏟️ **Team Fixtures & Results:** Dedicated sensors for **Next 5 Games** and **Last Played Match** that update automatically per club.
+* 🏟️ **Team Fixtures & Results:** Dedicated sensors for **the next 5 Games** and **last played match** that update automatically per club.
 * 🎙️ **Voice Assistant Ready:** Includes sentence-matching actions so assist pipelines can match fuzzy team names directly from natural speech.
 * ⚡ **Smart Rate Limiting:** Dynamic polling logic accelerates update intervals during live matches and dials back during off-hours to respect API limits.
-* 💾 **State Restoration:** Target teams persist across Home Assistant reboots without requiring automation re-initialization.
+* 💾 **State Restoration:** Target teams persist across Home Assistant reboots without requiring automation re-initialisation.
 
 ---
 
@@ -71,7 +71,13 @@ This integration exposes several custom actions under the `football_data` domain
 | `football_data.get_league_position` | Fetches standing stats for a team across all loaded leagues. | `team_id` (Required) |
 | `football_data.match_team_from_sentence` | Parses natural language sentences to extract a target team ID. | `sentence`, `favorite_club_id` |
 | `football_data.get_team_id` | Looks up a numerical `team_id` from a team name string. | `team_name` (Required) |
+| `football_data.get_scores_and_fixtures` | Gets Last X games or fixtures using by league_code, team_id, matchday_number, | `league` `team_id` `matchday_number`(Optional) |
+| `football_data.get_player_by_id` | Get Player information via person_id. | `person_id`  |
+| `football_data.get_squad_by_team_id` | Get current team squard via team_id. | `team_id` |
+| `football_data.get_match` | Returns last match id from team_d or match from matchday day number. | `team_id` `matchday_number`(Optional) |
+| `football_data.get_match_details` | Get match details from match_id. | `match_id`  |
 | `football_data.refresh_data` | Triggers a manual refresh of all API coordinators. | `league` (Optional) |
+
 
 ---
 
