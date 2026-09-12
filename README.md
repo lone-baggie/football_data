@@ -32,51 +32,55 @@ football_data/
         └── images/                    # Integration branding assets
             ├── icon.png
             └── logo.png
+```
 
+---
 
-⚙️ Installation
-Option 1: HACS (Recommended)
-Open HACS in your Home Assistant instance.
-Click the three dots in the top right corner and select Custom repositories.
-Paste your GitHub repository URL, select Integration as the category, and click Add.
-Search for Football Data, click Download, and restart Home Assistant.
-Option 2: Manual Installation
-Download the latest release zip/tarball from this repository.
-Copy the custom_components/football_data directory into your Home Assistant /config/custom_components/ folder.
-Restart Home Assistant.
-🚀 Configuration
-Obtain a free API key from Football-Data.org.
-In Home Assistant, navigate to Settings → Devices & Services → Add Integration.
-Search for Football Data.
-Enter your API Key and select the leagues you want to track (e.g., Premier League PL, Championship ELC, La Liga PD).
-🛠️ Actions (Services)
-This integration exposes several custom actions under the football_data domain:
+## ⚙️ Installation
 
-Action Name
-Description
-Key Parameters
-football_data.update_last_match
-Updates sensor.football_data_last_match to fetch the last finished game for a given team.
-team_id (Required)
-football_data.update_next_games
-Updates sensor.football_data_next_five_games with upcoming fixtures for a team.
-team_id (Required)
-football_data.get_league_position
-Fetches standing stats for a team across all loaded leagues.
-team_id (Required)
-football_data.match_team_from_sentence
-Parses natural language sentences to extract a target team ID.
-sentence, favorite_club_id
-football_data.get_team_id
-Looks up a numerical team_id from a team name string.
-team_name (Required)
-football_data.refresh_data
-Triggers a manual refresh of all API coordinators.
-league (Optional)
+### Option 1: HACS (Recommended)
+1. Open HACS in your Home Assistant instance.
+2. Click the three dots in the top right corner and select **Custom repositories**.
+3. Paste your GitHub repository URL, select **Integration** as the category, and click **Add**.
+4. Search for *Football Data*, click **Download**, and restart Home Assistant.
 
-💡 Jinja2 Dashboard Examples
-1. Show Last Match Scorecard
+### Option 2: Manual Installation
+1. Download the latest release zip/tarball from this repository.
+2. Copy the `custom_components/football_data` directory into your Home Assistant `/config/custom_components/` folder.
+3. Restart Home Assistant.
+
+---
+
+## 🚀 Configuration
+
+1. Obtain a free API key from [Football-Data.org](https://www.football-data.org/).
+2. In Home Assistant, navigate to **Settings** → **Devices & Services** → **Add Integration**.
+3. Search for *Football Data*.
+4. Enter your API Key and select the leagues you want to track (e.g., Premier League PL, Championship ELC, La Liga PD).
+
+---
+
+## 🛠️ Actions (Services)
+
+This integration exposes several custom actions under the `football_data` domain:
+
+| Action Name | Description | Key Parameters |
+| :--- | :--- | :--- |
+| `football_data.update_last_match` | Updates `sensor.football_data_last_match` to fetch the last finished game for a given team. | `team_id` (Required) |
+| `football_data.update_next_games` | Updates `sensor.football_data_next_five_games` with upcoming fixtures for a team. | `team_id` (Required) |
+| `football_data.get_league_position` | Fetches standing stats for a team across all loaded leagues. | `team_id` (Required) |
+| `football_data.match_team_from_sentence` | Parses natural language sentences to extract a target team ID. | `sentence`, `favorite_club_id` |
+| `football_data.get_team_id` | Looks up a numerical `team_id` from a team name string. | `team_name` (Required) |
+| `football_data.refresh_data` | Triggers a manual refresh of all API coordinators. | `league` (Optional) |
+
+---
+
+## 💡 Jinja2 Dashboard Examples
+
+### 1. Show Last Match Scorecard
 Place this inside a Markdown Card on your dashboard to display details for the last played match:
+
+```yaml
 type: markdown
 title: "Last Match Result"
 content: >
@@ -90,10 +94,12 @@ content: >
   {% else %}
     No match data loaded.
   {% endif %}
+```
 
-
-2. Next 5 Upcoming Fixtures
+### 2. Next 5 Upcoming Fixtures
 Format upcoming games neatly into an itemized list:
+
+```yaml
 type: markdown
 title: "Upcoming Fixtures"
 content: >
@@ -105,10 +111,15 @@ content: >
   {% else %}
     No upcoming fixtures found.
   {% endif %}
+```
 
+---
 
-🤖 Voice Assistant / Automation Example
+## 🤖 Voice Assistant / Automation Example
+
 Here is an example automation that automatically updates your last match sensor when an Assist voice command is spoken:
+
+```yaml
 alias: "Voice: Get Last Match"
 trigger:
   - platform: conversation
@@ -124,11 +135,10 @@ action:
   - action: football_data.update_last_match
     data:
       team_id: "{{ team_match.team_id }}"
+```
 
+---
 
-📄 License
-Distributed under the MIT License. See LICENSE for more information.
-Drop that into your repo root, push it up, and your documentation will match your code architecture line-for-line! Let me know if you need any tweaks.
+## 📄 License
 
-
-
+Distributed under the MIT License. See `LICENSE` for more information.
