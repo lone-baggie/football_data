@@ -8,5 +8,5 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/lone-baggie/football_data/issues",
   "requirements": ["aiohttp"],
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
