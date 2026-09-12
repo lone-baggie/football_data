@@ -17,28 +17,31 @@ A custom Home Assistant integration powered by the [Football-Data.org API](https
 ## 📁 Repository Structure
 
 ```text
-custom_components/football_data/
-├── __init__.py            # Integration setup, API coordinators, and action handlers
-├── config_flow.py         # UI configuration flow for API key and league selection
-├── const.py               # Constants, API endpoints, and update intervals
-├── manifest.json          # Integration metadata, requirements, and branding
-├── sensor.py              # Sensor platform definitions (Standings, Next 5, Last Match)
-├── services.py            # Voluptuous action validation schemas and service registration
-├── services.yaml          # Action definitions for Developer Tools and Assist UI
-├── strings.json           # UI translations
-└── images/                # Integration branding assets
-    ├── icon.png
-    └── logo.png
+your-github-repo-name/
+├── hacs.json                          # HACS configuration file
+├── README.md                          # Documentation
+├── LICENSE                            # License file
+└── custom_components/
+    └── football_data/
+        ├── __init__.py                # Integration setup, API coordinators, and action handlers
+        ├── config_flow.py             # UI configuration flow for API key and league selection
+        ├── const.py                   # Constants, API endpoints, and update intervals
+        ├── manifest.json              # Integration metadata, requirements, and branding
+        ├── sensor.py                  # Sensor platform definitions (Standings, Next 5, Last Match, Lookup)
+        ├── services.yaml              # Action definitions for Developer Tools and Assist UI
+        └── images/                    # Integration branding assets
+            ├── icon.png
+            └── logo.png
 
 
 ⚙️ Installation
 Option 1: HACS (Recommended)
 Open HACS in your Home Assistant instance.
-Click the 3 dots in the top right corner and select Custom repositories.
+Click the three dots in the top right corner and select Custom repositories.
 Paste your GitHub repository URL, select Integration as the category, and click Add.
 Search for Football Data, click Download, and restart Home Assistant.
 Option 2: Manual Installation
-Download the latest release from this repository.
+Download the latest release zip/tarball from this repository.
 Copy the custom_components/football_data directory into your Home Assistant /config/custom_components/ folder.
 Restart Home Assistant.
 🚀 Configuration
@@ -47,7 +50,7 @@ In Home Assistant, navigate to Settings → Devices & Services → Add Integrati
 Search for Football Data.
 Enter your API Key and select the leagues you want to track (e.g., Premier League PL, Championship ELC, La Liga PD).
 🛠️ Actions (Services)
-This integration exposes several custom actions (formerly services) under the football_data domain:
+This integration exposes several custom actions under the football_data domain:
 
 Action Name
 Description
@@ -125,5 +128,7 @@ action:
 
 📄 License
 Distributed under the MIT License. See LICENSE for more information.
+Drop that into your repo root, push it up, and your documentation will match your code architecture line-for-line! Let me know if you need any tweaks.
+
 
 
