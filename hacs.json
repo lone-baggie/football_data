@@ -1,1 +1,5 @@
-
+{
+  "name": "Football Data",
+  "render_readme": true,
+  "country": ["GB", "FR", "ES", "DE", "IT", "NL", "PT", "BR", "WORLD"]
+}
