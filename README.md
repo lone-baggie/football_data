@@ -37,6 +37,19 @@ A custom Home Assistant integration powered by the [Football-Data.org API](https
 
 ---
 
+## 📓 Sensors
+
+The following sensors will be created.
+
+| Sensor | Description | 
+| :--- | :--- |
+| `sensor.football_data_last_match` | Contains details of last match. State holds text line of score  |
+| `sensor.football_data_next_five_games` | Contains details of next 5 games. State holds text of next game.  |
+| `sensor.football_data_standings_XXX` | XXX = Shortname of the league. Complete league table. State holds text line of 1st place  |
+| `sensor.football_data_teams_lookup` | Contains details of all teams selected. Used for team lookup. State contains number of teams .  |
+
+
+---
 ## 🛠️ Actions (Services)
 
 This integration exposes several custom actions under the `football_data` domain:
@@ -46,7 +59,7 @@ This integration exposes several custom actions under the `football_data` domain
 | `football_data.update_last_match` | Updates `sensor.football_data_last_match` to fetch the last finished game for a given team. | `team_id`  |
 | `football_data.update_next_games` | Updates `sensor.football_data_next_five_games` with upcoming fixtures for a team. | `team_id`  |
 | `football_data.get_league_position` | Fetches standing stats for a team across all loaded leagues. | `team_id`|
-| `football_data.match_team_from_sentence` | Parses natural language sentences to extract a target team ID. | `sentence`, `favorite_club_id` |
+| `football_data.match_team_from_sentence` | Parses natural language sentences to extract a target team ID. If no team found defaults to favorite club id. | `sentence`, `favorite_club_id` |
 | `football_data.get_team_id` | Looks up a numerical `team_id` from a team name string. | `team_name` |
 | `football_data.get_scores_and_fixtures` | Gets past games or fixtures filtered by league, team, or matchday. | `league`, `team_id`, `matchday_number` |
 | `football_data.get_player_by_id` | Gets player information via a specific person ID. | `person_id` |
@@ -56,7 +69,6 @@ This integration exposes several custom actions under the `football_data` domain
 | `football_data.refresh_data` | Triggers a manual refresh of all API coordinators. | `league`|
 
 ---
-
 ## 💡 Jinja2 Dashboard Examples
 
 ### 1. Show Last Match Scorecard
