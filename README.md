@@ -43,17 +43,17 @@ This integration exposes several custom actions under the `football_data` domain
 
 | Action Name | Description | Key Parameters |
 | :--- | :--- | :--- |
-| `football_data.update_last_match` | Updates `sensor.football_data_last_match` to fetch the last finished game for a given team. | `team_id` (Required) |
-| `football_data.update_next_games` | Updates `sensor.football_data_next_five_games` with upcoming fixtures for a team. | `team_id` (Required) |
-| `football_data.get_league_position` | Fetches standing stats for a team across all loaded leagues. | `team_id` (Required) |
+| `football_data.update_last_match` | Updates `sensor.football_data_last_match` to fetch the last finished game for a given team. | `team_id`  |
+| `football_data.update_next_games` | Updates `sensor.football_data_next_five_games` with upcoming fixtures for a team. | `team_id`  |
+| `football_data.get_league_position` | Fetches standing stats for a team across all loaded leagues. | `team_id`|
 | `football_data.match_team_from_sentence` | Parses natural language sentences to extract a target team ID. | `sentence`, `favorite_club_id` |
-| `football_data.get_team_id` | Looks up a numerical `team_id` from a team name string. | `team_name` (Required) |
-| `football_data.get_scores_and_fixtures` | Gets past games or fixtures filtered by league, team, or matchday. | `league`, `team_id`, `matchday_number` (Optional) |
+| `football_data.get_team_id` | Looks up a numerical `team_id` from a team name string. | `team_name` |
+| `football_data.get_scores_and_fixtures` | Gets past games or fixtures filtered by league, team, or matchday. | `league`, `team_id`, `matchday_number` |
 | `football_data.get_player_by_id` | Gets player information via a specific person ID. | `person_id` |
 | `football_data.get_squad_by_team_id` | Gets the current team squad using a team ID. | `team_id` |
 | `football_data.get_match` | Returns the last match ID for a team or a match from a specific matchday. | `team_id`, `matchday_number` (Optional) |
 | `football_data.get_match_details` | Gets detailed information for a specific match. | `match_id` |
-| `football_data.refresh_data` | Triggers a manual refresh of all API coordinators. | `league` (Optional) |
+| `football_data.refresh_data` | Triggers a manual refresh of all API coordinators. | `league`|
 
 ---
 
