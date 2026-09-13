@@ -1,6 +1,6 @@
 # ⚽ Football Data Integration for Home Assistant
 
-A custom Home Assistant integration powered by the [Football-Data.org API](https://www.football-data.org/). Effortlessly track live scores, league standings, squad info, and upcoming fixtures. Designed with native support for **Voice Assistants**, **Jinja2 templating**, and **dynamic entity state restoration**.
+A custom Home Assistant integration powered by the [Football-Data.org API](https://www.football-data.org/). Effortlessly track live scores, league standings, squad info, and upcoming fixtures. Information supplied for [12 european leagues](https://www.football-data.org/coverage).
 
 ---
 
@@ -9,7 +9,6 @@ A custom Home Assistant integration powered by the [Football-Data.org API](https
 * 📊 **Live League Tables & Standings:** Dynamic sensors caching entire league tables directly inside state attributes.
 * 🏟️ **Team Fixtures & Results:** Dedicated sensors for **the next 5 Games** and **last played match** that update automatically per club.
 * 🎙️ **Voice Assistant Ready:** Includes sentence-matching actions so assist pipelines can match fuzzy team names directly from natural speech.
-* ⚡ **Smart Rate Limiting:** Dynamic polling logic accelerates update intervals during live matches and dials back during off-hours to respect API limits.
 * 💾 **State Restoration:** Target teams persist across Home Assistant reboots without requiring automation re-initialisation.
 
 ---
@@ -118,7 +117,7 @@ content: >
   {% endif %}
 ```
 ### 3. Dashboard
-Use following dashboard [example](https://github.com/lone-baggie/football_data/blob/main/dashboard/dashboard.yml) by pasting over an existing blank dashboard, using the raw configuration editor (use the three dots menu top right)
+Use following dashboard [example](https://github.com/lone-baggie/football_data/blob/main/dashboard/dashboard.yml) by pasting over an existing blank dashboard, using the raw configuration editor (use the three dots menu top right). This dashboard requires the [custom button card](https://custom-cards.github.io/button-card/v7.0/) 
 ![Dashboard image](https://github.com/lone-baggie/football_data/blob/main/images/dashboard.png)
 
 
