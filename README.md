@@ -13,28 +13,6 @@ A custom Home Assistant integration powered by the [Football-Data.org API](https
 
 ---
 
-## 📁 Repository Structure
-
-```text
-football_data/
-├── hacs.json                          # HACS configuration file
-├── README.md                          # Documentation
-├── LICENSE                            # License file
-└── custom_components/
-    └── football_data/
-        ├── __init__.py                # Integration setup, API coordinators, and action handlers
-        ├── config_flow.py             # UI configuration flow for API key and league selection
-        ├── const.py                   # Constants, API endpoints, and update intervals
-        ├── manifest.json              # Integration metadata, requirements, and branding
-        ├── sensor.py                  # Sensor platform definitions (Standings, Next 5, Last Match, Lookup)
-        ├── services.yaml              # Action definitions for Developer Tools and Assist UI
-        └── images/                    # Integration branding assets
-            ├── icon.png
-            └── logo.png
-```
-
----
-
 ## ⚙️ Installation
 
 ### Option 1: HACS (Recommended)
