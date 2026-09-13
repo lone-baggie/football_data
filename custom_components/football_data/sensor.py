@@ -32,25 +32,30 @@ async def async_setup_entry(
 
     first_teams_coord = next(iter(teams_coordinators.values()))
 
-    entities: list[SensorEntity] = [
-        FootballDataTeamsLookupSensor(first_teams_coord, teams_coordinators)
-    ]
+    # Add lookup sensor
+    async_add_entities(
+        [FootballDataTeamsLookupSensor(first_teams_coord, teams_coordinators)],
+        update_before_add=True,
+    )
 
+    # Add standings sensors (with restore support)
+    standing_entities: list[SensorEntity] = []
     for league_code, s_coord in standings_coordinators.items():
         standings_sensor = FootballDataStandingsSensor(s_coord, league_code)
-        entities.append(standings_sensor)
+        standing_entities.append(standings_sensor)
         data["entities"][f"standings_{league_code.lower()}"] = standings_sensor
 
+    async_add_entities(standing_entities, update_before_add=True)
+
+    # Add persistent team-specific sensors with update_before_add=False
+    # so state restoration occurs before fetching.
     next_five_games_sensor = FootballDataNextFiveGamesSensor(hass, api_key, matches_coordinators)
     last_match_sensor = FootballDataLastMatchSensor(hass, api_key, matches_coordinators)
 
-    entities.append(next_five_games_sensor)
-    entities.append(last_match_sensor)
+    async_add_entities([next_five_games_sensor, last_match_sensor], update_before_add=False)
 
     data["entities"]["football_data_next_five_games"] = next_five_games_sensor
     data["entities"]["football_data_last_match"] = last_match_sensor
-
-    async_add_entities(entities, update_before_add=True)
 
 
 class FootballDataTeamsLookupSensor(CoordinatorEntity, SensorEntity):
@@ -105,8 +110,8 @@ class FootballDataTeamsLookupSensor(CoordinatorEntity, SensorEntity):
         }
 
 
-class FootballDataStandingsSensor(CoordinatorEntity, SensorEntity):
-    """Sensor storing the entire league table inside its state attributes."""
+class FootballDataStandingsSensor(CoordinatorEntity, SensorEntity, RestoreEntity):
+    """Sensor storing the entire league table inside its state attributes with state restoration."""
 
     def __init__(self, coordinator: DataUpdateCoordinator, league_code: str) -> None:
         """Initialize the standings sensor."""
@@ -116,6 +121,18 @@ class FootballDataStandingsSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"football_data_standings_{league_code.lower()}"
         self.entity_id = f"sensor.football_data_standings_{league_code.lower()}"
         self._attr_icon = "mdi:format-list-numbered"
+        self._restored_attributes: dict[str, Any] = {}
+        self._restored_state: str | None = None
+
+    async def async_added_to_hass(self) -> None:
+        """Restore last known standings attributes upon Home Assistant restart."""
+        await super().async_added_to_hass()
+        last_state = await self.async_get_last_state()
+        if last_state:
+            self._restored_state = last_state.state
+            if last_state.attributes:
+                self._restored_attributes = dict(last_state.attributes)
+                _LOGGER.info("Restored standings attributes for league %s", self._league_code)
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -125,7 +142,9 @@ class FootballDataStandingsSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         """Return the current 1st place leader as state."""
-        if not self.coordinator.data:
+        if not self.coordinator.data or not self.coordinator.data.get("standings"):
+            if self._restored_state and self._restored_state not in ["Unavailable", "Unknown"]:
+                return self._restored_state
             return "Unavailable"
 
         standings = self.coordinator.data.get("standings", [])
@@ -137,11 +156,23 @@ class FootballDataStandingsSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the full league table and standing details."""
-        if not self.coordinator.data:
-            return {"league": self._league_code, "table": []}
+        """Return the full league table, full name, crest, and standing details."""
+        if not self.coordinator.data or not self.coordinator.data.get("standings"):
+            if self._restored_attributes:
+                return self._restored_attributes
+            return {
+                "league": self._league_code,
+                "league_full_name": self._league_code,
+                "league_crest": None,
+                "table": [],
+            }
 
-        standings = self.coordinator.data.get("standings", [])
+        data = self.coordinator.data
+        competition = data.get("competition", {})
+        league_full_name = competition.get("name", self._league_code)
+        league_crest = competition.get("emblem")
+
+        standings = data.get("standings", [])
         parsed_table = []
 
         if standings and "table" in standings[0]:
@@ -164,7 +195,9 @@ class FootballDataStandingsSensor(CoordinatorEntity, SensorEntity):
 
         return {
             "league": self._league_code,
-            "season": self.coordinator.data.get("season", {}),
+            "league_full_name": league_full_name,
+            "league_crest": league_crest,
+            "season": data.get("season", {}),
             "table": parsed_table,
         }
 
@@ -177,6 +210,8 @@ class FootballDataNextFiveGamesSensor(CoordinatorEntity, SensorEntity, RestoreEn
         self._api_key = api_key
         self._matches_coordinators = matches_coordinators
         self._team_id: int | None = None
+        self._restored_attributes: dict[str, Any] = {}
+        self._restored_state: str | None = None
 
         coordinator = DataUpdateCoordinator(
             hass,
@@ -195,12 +230,15 @@ class FootballDataNextFiveGamesSensor(CoordinatorEntity, SensorEntity, RestoreEn
         """Restore state and persistent variables upon Home Assistant restart."""
         await super().async_added_to_hass()
         last_state = await self.async_get_last_state()
-        if last_state and last_state.attributes:
-            stored_team_id = last_state.attributes.get("team_id")
-            if stored_team_id is not None:
-                self._team_id = int(stored_team_id)
-                _LOGGER.info("Restored Next Five Games target team_id: %s", self._team_id)
-                await self.coordinator.async_refresh()
+        if last_state:
+            self._restored_state = last_state.state
+            if last_state.attributes:
+                self._restored_attributes = dict(last_state.attributes)
+                stored_team_id = last_state.attributes.get("team_id")
+                if stored_team_id is not None:
+                    self._team_id = int(stored_team_id)
+                    _LOGGER.info("Restored Next Five Games target team_id: %s", self._team_id)
+                    await self.coordinator.async_refresh()
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -210,7 +248,10 @@ class FootballDataNextFiveGamesSensor(CoordinatorEntity, SensorEntity, RestoreEn
     async def _async_fetch_next_games(self) -> dict[str, Any]:
         """Fetch next 5 games directly from team matches endpoint."""
         if self._team_id is None:
-            return {"team_id": None, "count": 0, "matches": []}
+            if self._restored_attributes.get("team_id") is not None:
+                self._team_id = int(self._restored_attributes["team_id"])
+            else:
+                return {"team_id": None, "count": 0, "matches": []}
 
         today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         url = f"{API_BASE_URL}/teams/{self._team_id}/matches?dateFrom={today_str}&status=SCHEDULED,TIMED,IN_PLAY,PAUSED"
@@ -255,6 +296,9 @@ class FootballDataNextFiveGamesSensor(CoordinatorEntity, SensorEntity, RestoreEn
         upcoming.sort(key=lambda x: x[0])
         next_matches = [item[1] for item in upcoming[:5]]
 
+        if not next_matches and self._restored_attributes.get("matches"):
+            return self._restored_attributes
+
         return {
             "team_id": self._team_id,
             "count": len(next_matches),
@@ -269,11 +313,13 @@ class FootballDataNextFiveGamesSensor(CoordinatorEntity, SensorEntity, RestoreEn
     @property
     def native_value(self) -> str:
         """Return formatted string for the next upcoming match."""
-        if self._team_id is None:
+        if self._team_id is None and not self._restored_attributes.get("team_id"):
             return "No Team Selected"
 
         matches = self.extra_state_attributes.get("matches", [])
         if not matches:
+            if self._restored_state and self._restored_state not in ["No Team Selected", "No Upcoming Fixtures"]:
+                return self._restored_state
             return "No Upcoming Fixtures"
 
         next_match = matches[0]
@@ -307,9 +353,11 @@ class FootballDataNextFiveGamesSensor(CoordinatorEntity, SensorEntity, RestoreEn
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return match details in exact get_scores_and_fixtures structure."""
-        if self.coordinator.data:
+        """Return match details in exact structure, falling back to restored attributes."""
+        if self.coordinator.data and self.coordinator.data.get("matches"):
             return self.coordinator.data
+        if self._restored_attributes:
+            return self._restored_attributes
         return {"team_id": self._team_id, "count": 0, "matches": []}
 
 
@@ -322,6 +370,8 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
         self._api_key = api_key
         self._matches_coordinators = matches_coordinators
         self._team_id: int | None = None
+        self._restored_attributes: dict[str, Any] = {}
+        self._restored_state: str | None = None
 
         coordinator = DataUpdateCoordinator(
             hass,
@@ -340,12 +390,15 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
         """Restore team_id and last match details upon HA reboot."""
         await super().async_added_to_hass()
         last_state = await self.async_get_last_state()
-        if last_state and last_state.attributes:
-            stored_team_id = last_state.attributes.get("team_id")
-            if stored_team_id is not None:
-                self._team_id = int(stored_team_id)
-                _LOGGER.info("Restored Last Match target team_id: %s", self._team_id)
-                await self.coordinator.async_refresh()
+        if last_state:
+            self._restored_state = last_state.state
+            if last_state.attributes:
+                self._restored_attributes = dict(last_state.attributes)
+                stored_team_id = last_state.attributes.get("team_id")
+                if stored_team_id is not None:
+                    self._team_id = int(stored_team_id)
+                    _LOGGER.info("Restored Last Match target team_id: %s", self._team_id)
+                    await self.coordinator.async_refresh()
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -355,7 +408,10 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
     async def _async_fetch_last_match(self) -> dict[str, Any]:
         """Fetch target team's finished matches and parse the latest one."""
         if self._team_id is None:
-            return {"team_id": None}
+            if self._restored_attributes.get("team_id") is not None:
+                self._team_id = int(self._restored_attributes["team_id"])
+            else:
+                return {"team_id": None}
 
         headers = {"X-Auth-Token": self._api_key}
         url = f"{API_BASE_URL}/teams/{self._team_id}/matches?status=FINISHED"
@@ -373,7 +429,6 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
         except Exception as err:
             _LOGGER.error("Failed to fetch team's finished matches: %s", err)
 
-        # Fallback to local coordinator cache if direct endpoint fails or yields no matches
         if not latest_match_summary:
             all_matches = []
             for coord in self._matches_coordinators.values():
@@ -390,6 +445,8 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
                 latest_match_summary = finished[0]
 
         if not latest_match_summary:
+            if self._restored_attributes and "match_id" in self._restored_attributes:
+                return self._restored_attributes
             return {"team_id": self._team_id, "error": "No finished matches found"}
 
         match_id = latest_match_summary.get("id")
@@ -399,9 +456,13 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
             async with aiohttp.ClientSession() as session:
                 async with session.get(detail_url, headers=headers) as response:
                     if response.status != 200:
+                        if self._restored_attributes and "match_id" in self._restored_attributes:
+                            return self._restored_attributes
                         return {"team_id": self._team_id, "error": f"HTTP Error {response.status}"}
                     match_data = await response.json()
         except Exception as err:
+            if self._restored_attributes and "match_id" in self._restored_attributes:
+                return self._restored_attributes
             return {"team_id": self._team_id, "error": f"Network fetch failed: {err}"}
 
         home_team = match_data.get("homeTeam", {})
@@ -464,10 +525,12 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
     @property
     def native_value(self) -> str:
         """Return match outcome score string (e.g., Arsenal 2 - 1 Chelsea)."""
-        if self._team_id is None:
+        if self._team_id is None and not self._restored_attributes.get("team_id"):
             return "No Team Selected"
 
         if not self.coordinator.data or "error" in self.coordinator.data:
+            if self._restored_state and self._restored_state not in ["Unavailable", "Unknown", "No Match Data", "No Team Selected"]:
+                return self._restored_state
             return "No Match Data"
 
         data = self.coordinator.data
@@ -481,7 +544,9 @@ class FootballDataLastMatchSensor(CoordinatorEntity, SensorEntity, RestoreEntity
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return full match details in attributes, preserving team_id for persistence."""
-        if self.coordinator.data:
+        """Return full match details in attributes, falling back to restored attributes."""
+        if self.coordinator.data and "error" not in self.coordinator.data:
             return self.coordinator.data
+        if self._restored_attributes:
+            return self._restored_attributes
         return {"team_id": self._team_id}

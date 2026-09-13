@@ -1,0 +1,333 @@
+views:
+  - type: panel
+    path: team-stats
+    title: Team Stats
+    cards:
+      - type: custom:button-card
+        aspect_ratio: none
+        variables:
+          var_fixtures_sensor: sensor.football_data_next_five_games
+          var_match_sensor: sensor.football_data_last_match
+          var_standing_sensor: |
+            [[[
+              try {
+                const fixturesState = hass.states[variables.var_fixtures_sensor];
+                if (fixturesState && fixturesState.attributes && fixturesState.attributes.matches) {
+                  const matches = fixturesState.attributes.matches;
+                  if (matches.length > 0 && matches[0].competition && matches[0].competition.code) {
+                    const compCode = matches[0].competition.code.toLowerCase();
+                    return `sensor.football_data_standings_${compCode}`;
+                  }
+                }
+                return "sensor.football_data_standings_elc";
+              } catch {
+                return "sensor.football_data_standings_elc";
+              }
+            ]]]
+          var_standing_data: |
+            [[[
+              try {
+                const sensorId = variables.var_standing_sensor;
+                const stateObj = hass.states[sensorId];
+                return stateObj && stateObj.attributes ? stateObj.attributes : null;
+              } catch {
+                return null;
+              }
+            ]]]
+          var_fixtures_data: |
+            [[[
+              try {
+                const stateObj = hass.states[variables.var_fixtures_sensor];
+                return stateObj && stateObj.attributes ? stateObj.attributes : { team_id: null, matches: [] };
+              } catch {
+                return { team_id: null, matches: [] };
+              }
+            ]]]
+          var_match_details: |
+            [[[
+              try {
+                const stateObj = hass.states[variables.var_match_sensor];
+                return stateObj && stateObj.attributes ? stateObj.attributes : null;
+              } catch {
+                return null;
+              }
+            ]]]
+        styles:
+          grid:
+            - grid-template-areas: |
+                "standings match"
+                "standings fixtures"
+            - grid-template-rows: 35vh 60vh
+            - grid-template-columns: 60% 40%
+            - gap: 1.5vh 1.5vw
+          card:
+            - background-color: '#121212'
+            - border-width: 0px
+            - border-radius: 0px
+            - padding: 1.5vh 1.5vw
+            - height: 100vh
+            - box-sizing: border-box
+            - overflow: hidden
+          custom_fields:
+            standings:
+              - width: 100%
+              - height: 100%
+              - overflow: hidden
+              - border-right: 1px solid
+              - padding-right: 1.5vw
+            match:
+              - width: 100%
+              - height: 100%
+              - overflow: hidden
+              - border-bottom: 1px solid
+              - padding-bottom: 0.5vh
+              - padding-left: 0.5vw
+            fixtures:
+              - width: 100%
+              - height: 100%
+              - overflow: hidden
+              - padding-left: 0.5vw
+              - padding-top: 0.5vh
+        custom_fields:
+          standings: |
+            [[[
+              return (() => {
+                const data = variables.var_standing_data;
+
+                if (!data || !data.table) {
+                  return `<div style="color: #666; font-family: system-ui;">Awaiting standings table for ${variables.var_standing_sensor}...</div>`;
+                }
+
+                const leagueName = data.league_full_name || "League Standings";
+                const leagueCrest = data.league_crest || "";
+                const standings = data.table;
+                const fixturesPayload = variables.var_fixtures_data;
+                
+                const targetTeamId = fixturesPayload ? (fixturesPayload.team_id || (Array.isArray(fixturesPayload) ? fixturesPayload[0]?.homeTeam?.id : null)) : null;
+
+                const teamIndex = standings.findIndex(row => row.team_id === targetTeamId);
+                const totalTeams = standings.length;
+                const pageSize = 16;
+                
+                let displayStandings = [];
+                if (totalTeams <= pageSize) {
+                  displayStandings = standings;
+                } else {
+                  if (teamIndex !== -1 && teamIndex >= pageSize) {
+                    displayStandings = standings.slice(-pageSize);
+                  } else {
+                    displayStandings = standings.slice(0, pageSize);
+                  }
+                }
+
+                let html = `
+                  <div style="height: 100%; width: 100%; color: white; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column;">
+                    <div style="text-align: left; font-size: 3.4vh; font-weight: 800; color: #fff; margin-bottom: 0.8vh; height: 4.8vh; display: flex; align-items: center; justify-content: flex-start; gap: 0.8vw; padding-left: 0.2vw;">
+                      ${leagueCrest ? `<img src="${leagueCrest}" style="height: 4.0vh; width: 4.0vh; object-fit: contain;"/>` : ''}
+                      <span>${leagueName}</span>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 2.8vh; text-align: left; margin-top: 1.2vh;">
+                      <thead>
+                        <tr style="border-bottom: 2px solid #444; color: #aaa; background-color: #121212;">
+                          <th style="padding: 0.4vh 0; width: 10%;">#</th>
+                          <th style="padding: 0.4vh 0; width: 42%;">Team</th>
+                          <th style="padding: 0.4vh 0; text-align: center; width: 9%;">PL</th>
+                          <th style="padding: 0.4vh 0; text-align: center; width: 9%;">W</th>
+                          <th style="padding: 0.4vh 0; text-align: center; width: 9%;">D</th>
+                          <th style="padding: 0.4vh 0; text-align: center; width: 9%;">L</th>
+                          <th style="padding: 0.4vh 0; text-align: center; width: 12%;">PTS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                `;
+
+                displayStandings.forEach((row) => {
+                  const pos = row.position;
+                  const team = row.short_name || row.team_name;
+                  const played = row.playedGames;
+                  const won = row.won;
+                  const draw = row.draw;
+                  const lost = row.lost;
+                  const points = row.points;
+                  const isTargetTeam = targetTeamId && row.team_id === targetTeamId;
+
+                  const rowBg = isTargetTeam ? 'background-color: rgba(76, 175, 80, 0.25);' : '';
+                  const teamNameStyle = isTargetTeam ? 'color: #4CAF50; font-weight: 800;' : 'color: white; font-weight: 600;';
+
+                  html += `
+                    <tr style="border-bottom: 1px solid #2a2a2a; ${rowBg}">
+                      <td style="padding: 0.45vh 0; font-weight: bold; color: #bbb;">${pos}</td>
+                      <td style="padding: 0.45vh 0; ${teamNameStyle} white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0;">${team}</td>
+                      <td style="padding: 0.45vh 0; text-align: center;">${played}</td>
+                      <td style="padding: 0.45vh 0; text-align: center;">${won}</td>
+                      <td style="padding: 0.45vh 0; text-align: center;">${draw}</td>
+                      <td style="padding: 0.45vh 0; text-align: center;">${lost}</td>
+                      <td style="padding: 0.45vh 0; text-align: center; font-weight: 800; color: #4CAF50;">${points}</td>
+                    </tr>
+                  `;
+                });
+
+                html += `
+                      </tbody>
+                    </table>
+                  </div>
+                `;
+
+                return html;
+              })();
+            ]]]
+          match: |
+            [[[
+              return (() => {
+                let matchData = variables.var_match_details;
+
+                if (!matchData || Object.keys(matchData).length === 0) {
+                  return `<div style="color: #666; font-family: system-ui;">No current match info...</div>`;
+                }
+
+                let fixturesPayload = variables.var_fixtures_data;
+
+                const matchesList = Array.isArray(fixturesPayload) ? fixturesPayload : (fixturesPayload ? fixturesPayload.matches || [] : []);
+                const targetTeamId = fixturesPayload ? (fixturesPayload.team_id || matchesList[0]?.homeTeam?.id) : null;
+
+                const getTeamTla = (teamObj) => teamObj ? (teamObj.tla || teamObj.shortName || teamObj.name) : '';
+                const getTeamFullName = (teamObj) => teamObj ? (teamObj.shortName || teamObj.name) : '';
+
+                let targetTeamHeaderName = '';
+                let targetTeamCrest = '';
+
+                if (targetTeamId && matchesList.length > 0) {
+                  for (const match of matchesList) {
+                    if (match.homeTeam && match.homeTeam.id === targetTeamId) {
+                      targetTeamHeaderName = getTeamFullName(match.homeTeam);
+                      targetTeamCrest = match.homeTeam.crest;
+                      break;
+                    } else if (match.awayTeam && match.awayTeam.id === targetTeamId) {
+                      targetTeamHeaderName = getTeamFullName(match.awayTeam);
+                      targetTeamCrest = match.awayTeam.crest;
+                      break;
+                    }
+                  }
+                }
+
+                const homeTla = getTeamTla(matchData.homeTeam);
+                const awayTla = getTeamTla(matchData.awayTeam);
+                const homeCrest = matchData.homeTeam ? matchData.homeTeam.crest : '';
+                const awayCrest = matchData.awayTeam ? matchData.awayTeam.crest : '';
+                const homeScore = matchData.score && matchData.score.fullTime ? (matchData.score.fullTime.home ?? '-') : '-';
+                const awayScore = matchData.score && matchData.score.fullTime ? (matchData.score.fullTime.away ?? '-') : '-';
+                const status = matchData.status || '';
+
+                let matchTime = 'TBD';
+                if (matchData.utcDate) {
+                  const d = new Date(matchData.utcDate);
+                  matchTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + d.toLocaleDateString();
+                }
+
+                return `
+                  <div style="color: white; font-family: system-ui, -apple-system, sans-serif; height: 100%; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; padding: 0.5vh 0;">
+                    
+                    <div style="display: flex; align-items: center; gap: 0.8vw; height: 4.8vh;">
+                      ${targetTeamCrest ? `<img src="${targetTeamCrest}" style="height: 4.4vh; width: 4.4vh; object-fit: contain;"/>` : ''}
+                      ${targetTeamHeaderName ? `<span style="font-size: 3.4vh; font-weight: 800;">${targetTeamHeaderName}</span>` : ''}
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; margin: auto 0; gap: 1vw; transform: translateY(1.2vh);">
+                      <div style="text-align: center; justify-self: center;">
+                        ${homeCrest ? `<img src="${homeCrest}" style="height: 12.5vh; width: 12.5vh; object-fit: contain; display: block; margin: 0 auto 0.4vh auto;"/>` : ''}
+                        <div style="font-size: 3.8vh; font-weight: 900;">${homeTla}</div>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div style="font-size: 4.5vh; font-weight: 900; background: #1e1e1e; padding: 0.5vh 1.8vh; border-radius: 8px; letter-spacing: 2px; text-align: center; white-space: nowrap;">
+                          ${homeScore} : ${awayScore}
+                        </div>
+                        <div style="font-size: 1.4vh; color: #ff9800; font-weight: 800; margin-top: 0.4vh; text-transform: uppercase; text-align: center;">
+                          ${status}
+                        </div>
+                      </div>
+
+                      <div style="text-align: center; justify-self: center;">
+                        ${awayCrest ? `<img src="${awayCrest}" style="height: 12.5vh; width: 12.5vh; object-fit: contain; display: block; margin: 0 auto 0.4vh auto;"/>` : ''}
+                        <div style="font-size: 3.8vh; font-weight: 900;">${awayTla}</div>
+                      </div>
+                    </div>
+
+                    <div style="text-align: center; width: 100%;">
+                      <div style="background-color: #1e1e1e; padding: 0.3vh 1vw; border-radius: 6px; font-size: 1.4vh; color: #ddd; display: inline-block;">
+                        <strong>Kick-off:</strong> ${matchTime}
+                      </div>
+                    </div>
+
+                    <div style="height: 0.5vh;"></div>
+                  </div>
+                `;
+              })();
+            ]]]
+          fixtures: |
+            [[[
+              return (() => {
+                let fixturesPayload = variables.var_fixtures_data;
+
+                if (!fixturesPayload) {
+                  return `<div style="color: #666; font-family: system-ui;">No upcoming fixtures available...</div>`;
+                }
+
+                const matchesList = Array.isArray(fixturesPayload) ? fixturesPayload : (fixturesPayload.matches || []);
+
+                const getTeamTla = (teamObj) => teamObj ? (teamObj.tla || teamObj.shortName || teamObj.name) : '';
+
+                const rowsHtml = matchesList.slice(0, 5).map(match => {
+                  const homeTla = getTeamTla(match.homeTeam);
+                  const awayTla = getTeamTla(match.awayTeam);
+                  const homeCrest = match.homeTeam ? match.homeTeam.crest : '';
+                  const awayCrest = match.awayTeam ? match.awayTeam.crest : '';
+                  
+                  let dateStr = 'TBD';
+                  let timeStr = '';
+                  if (match.utcDate) {
+                    const d = new Date(match.utcDate);
+                    const dayNum = d.getDate();
+                    const monthStr = d.toLocaleDateString('en-GB', { month: 'short' }).substring(0, 3);
+                    dateStr = `${dayNum} ${monthStr}`;
+                    timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  }
+
+                  return `
+                    <div style="display: grid; grid-template-columns: 20% 1fr auto 1fr 20%; align-items: center; background: #1e1e1e; padding: 0.5vh 1vw; border-radius: 6px; height: 9.5vh; box-sizing: border-box; gap: 0.8vw;">
+                      <div style="text-align: left;">
+                        <div style="font-size: 2.6vh; font-weight: 800; color: #4CAF50; white-space: nowrap;">${dateStr}</div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 0.6vw;">
+                        <span style="font-size: 2.6vh; font-weight: 800;">${homeTla}</span>
+                        <div style="width: 5.2vh; height: 5.2vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          ${homeCrest ? `<img src="${homeCrest}" style="height: 100%; width: 100%; object-fit: contain;"/>` : ''}
+                        </div>
+                      </div>
+
+                      <div style="display: flex; justify-content: center; align-items: center;">
+                        <div style="padding: 0.3vh 1vh; text-align: center; font-size: 1.4vh; font-weight: 900; color: #ff9800; background: #2a2a2a; border-radius: 4px;">VS</div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; justify-content: flex-start; gap: 0.6vw;">
+                        <div style="width: 5.2vh; height: 5.2vh; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          ${awayCrest ? `<img src="${awayCrest}" style="height: 100%; width: 100%; object-fit: contain;"/>` : ''}
+                        </div>
+                        <span style="font-size: 2.6vh; font-weight: 800;">${awayTla}</span>
+                      </div>
+
+                      <div style="text-align: right;">
+                        <div style="font-size: 2.4vh; font-weight: 700; color: #aaa; white-space: nowrap;">${timeStr}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('');
+
+                return `
+                  <div style="color: white; font-family: system-ui, -apple-system, sans-serif; height: 100%; display: flex; flex-direction: column; justify-content: space-evenly;">
+                    ${rowsHtml}
+                  </div>
+                `;
+              })();
+            ]]]
